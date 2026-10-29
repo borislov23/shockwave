@@ -3,7 +3,7 @@
   "id": "blockwavemod",
   "version": "1.0.0",
   "name": "Block Wave Mod",
-  "description": "Создает красивую волну по блокам при ударе!",
+  "description": "Гладкая векторная волна при ударе",
   "authors": [
     "ТвойНик"
   ],
@@ -13,6 +13,9 @@
   "entrypoints": {
     "main": [
       "BlockWaveEffect"
+    ],
+    "client": [
+      "BlockWaveClient"
     ]
   },
   "mixins": [],
