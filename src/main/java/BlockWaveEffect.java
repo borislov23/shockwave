@@ -1,24 +1,24 @@
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.entity.player.AttackEntityEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
-@Mod.EventBusSubscriber
-public class BlockWaveEffect {
+public class BlockWaveMod implements ModInitializer {
 
-    @SubscribeEvent
-    public static void onPlayerAttack(AttackEntityEvent event) {
-        Player player = event.getEntity();
-        Entity target = event.getTarget();
-
-        if (!player.level().isClientSide() && player.level() instanceof ServerLevel serverLevel) {
-            BlockPos centerPos = target.blockPosition();
-            spawnWaveOnGround(serverLevel, centerPos);
-        }
+    @Override
+    public void onInitialize() {
+        // Подписываемся на событие атаки сущности в Fabric API
+        AttackEntityCallback.EVENT.register((player, level, hand, target, hitResult) -> {
+            if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
+                BlockPos centerPos = target.blockPosition();
+                spawnWaveOnGround(serverLevel, centerPos);
+            }
+            return InteractionResult.PASS;
+        });
     }
 
     private static void spawnWaveOnGround(ServerLevel serverLevel, BlockPos center) {
