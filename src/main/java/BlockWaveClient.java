@@ -57,19 +57,20 @@ public class BlockWaveClient implements ClientModInitializer {
     private static class ClientWave {
         private final Vec3 center;
         private float radius = 0.2f;
-        private final float maxRadius = 6.0f;
+        private final float maxRadius = 7.0f; // Максимум 7 блоков
 
         public ClientWave(Vec3 center) {
             this.center = center;
         }
 
         public boolean tick() {
-            radius += 0.18f;
+            // Пролетает 7 блоков ровно за 1 секунду (20 тиков)
+            radius += 0.35f; 
             return radius <= maxRadius;
         }
 
         public void render(PoseStack poseStack, VertexConsumer buffer) {
-            int segments = 48;
+            int segments = 60;
             float y = (float) center.y + 0.04f;
 
             for (int i = 0; i < segments; i++) {
