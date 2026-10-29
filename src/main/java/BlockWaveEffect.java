@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -17,17 +16,17 @@ public class BlockWaveEffect implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        // Перехватываем удар игрока
+        // Ловим удар игрока
         AttackEntityCallback.EVENT.register((player, level, hand, target, hitResult) -> {
             if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
                 BlockPos centerPos = target.blockPosition();
-                // Запускаем новую волну
+                // Запускаем новую волну от позиции цели
                 activeWaves.add(new ActiveWave(serverLevel, centerPos));
             }
             return InteractionResult.PASS;
         });
 
-        // Обрабатываем движение волны каждый игровой тик
+        // Двигаем волну каждый игровой тик для плавности
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             Iterator<ActiveWave> iterator = activeWaves.iterator();
             while (iterator.hasNext()) {
@@ -42,8 +41,8 @@ public class BlockWaveEffect implements ModInitializer {
     private static class ActiveWave {
         private final ServerLevel level;
         private final BlockPos center;
-        private double currentRadius = 1.0;
-        private final double maxRadius = 6.0;
+        private double currentRadius = 0.5; // Начинаем из центра
+        private final double maxRadius = 6.0;   // Радиус до 6 блоков
         private int tickDelay = 0;
 
         public ActiveWave(ServerLevel level, BlockPos center) {
@@ -52,26 +51,28 @@ public class BlockWaveEffect implements ModInitializer {
         }
 
         public boolean tick() {
-            // Задержка в 3 тика между шагами, чтобы волна шла плавно и небыстро
+            // Задержка в 1 тик для максимальной плавности движения волны
             if (tickDelay > 0) {
                 tickDelay--;
                 return true;
             }
-            tickDelay = 3; 
+            tickDelay = 1; 
 
-            // Рисуем сплошное белое кольцо на текущем радиусе
-            spawnSolidRing(level, center, currentRadius);
+            // Рисуем сплошное плотное кольцо на текущем радиусе
+            spawnWaveRing(level, center, currentRadius);
 
-            // Увеличиваем радиус для следующего шага
-            currentRadius += 0.8;
+            // Увеличиваем радиус по чуть-чуть, чтобы волна шла плавно
+            currentRadius += 0.4;
             
-            // Работаем, пока не достигнем максимального радиуса (6 блоков)
+            // Останавливаемся, когда дошли до 6 блоков
             return currentRadius <= maxRadius;
         }
 
-        private void spawnSolidRing(ServerLevel serverLevel, BlockPos center, double r) {
-            // Делаем очень много точек на окружности, чтобы они сливались в сплошную линию
-            int points = (int) (r * 24); 
+        private void spawnWaveRing(ServerLevel serverLevel, BlockPos center, double r) {
+            if (r < 0.2) return;
+
+            // Количество точек зависит от радиуса, чтобы линия была сплошной без просветов
+            int points = (int) (r * 30);
             
             for (int i = 0; i < points; i++) {
                 double angle = 2 * Math.PI * i / points;
@@ -80,14 +81,14 @@ public class BlockWaveEffect implements ModInitializer {
                 
                 BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos((int) x, center.getY(), (int) z);
                 
-                // Находим точную высоту блока земли под этой точкой
+                // Аккуратно находим поверхность блока земли под точкой
                 while (mutablePos.getY() > center.getY() - 3 && serverLevel.isEmptyBlock(mutablePos.below())) {
                     mutablePos.move(0, -1, 0);
                 }
 
-                // Используем END_ROD — она дает яркий, красивый белый шлейф в виде линии
+                // Спавним белую яркую частицу ровно по поверхности блоков
                 serverLevel.sendParticles(
-                    ParticleTypes.END_ROD,
+                    ParticleTypes.FIREWORK, // Дает красивую плотную линию из искр
                     x, mutablePos.getY() + 0.1, z, 
                     1, 0.0, 0.0, 0.0, 0.0
                 );
